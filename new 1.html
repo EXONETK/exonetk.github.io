@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Button Variation Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    h1 { margin-bottom: 20px; }
+    #timer { font-size: 22px; margin: 20px 0; font-weight: bold; color: #000000; }
+
+    /* Button styles */
+    .button {
+      padding: 15px 30px;
+      font-size: 18px;
+      margin: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+    }
+    .red   { background-color: #e74c3c; color: white; }
+    .blue  { background-color: #3498db; color: white; }
+    .green { background-color: #27ae60; color: white; }
+    .large { font-size: 22px; padding: 20px 40px; }
+    .round { border-radius: 30px; }
+  </style>
+</head>
+<body>
+  <h1>Button Variation Test</h1>
+  <p>Observe the timer and choose a button.</p>
+
+  <!-- Timer display -->
+  <div id="timer">0.00 seconds</div>
+
+  <!-- Buttons with variations -->
+  <button class="button red"   data-style="Red Button">Red Button</button>
+  <button class="button blue"  data-style="Blue Button">Blue Button</button>
+  <button class="button green" data-style="Green Button">Green Button</button>
+  <button class="button large blue" data-style="Large Blue Button">Large Blue</button>
+  <button class="button round red" data-style="Round Red Button">Round Red</button>
+
+  <script>
+    // Track start time
+    let startTime = new Date().getTime();
+
+    // Update the visible timer every 100ms
+    let timerInterval = setInterval(function() {
+      let now = new Date().getTime();
+      let elapsed = (now - startTime) / 1000;
+      document.getElementById("timer").innerText = elapsed.toFixed(2) + " seconds";
+    }, 100);
+
+    // Add event listeners to all buttons
+    document.querySelectorAll(".button").forEach(button => {
+      button.onclick = function() {
+        let endTime = new Date().getTime();
+        let responseTime = (endTime - startTime) / 1000;
+        clearInterval(timerInterval);
+
+        // Replace entry.111111 and entry.222222 with your actual Google Form entry IDs
+        let formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSeSwhzd-vJgpjGR9pxUGy2KyX-2bTndbfaaxOa01Zg_o82jNA/viewform?usp=pp_url";
+        let responseParam = "&entry.366340186=" + responseTime.toFixed(2); // response time
+        let styleParam    = "&entry.170325149=" + encodeURIComponent(this.getAttribute("data-style")); // button style
+
+        // Redirect with pre-filled answers
+        window.location.href = formBaseURL + responseParam + styleParam;
+      }
+    });
+  </script>
+</body>
+</html>
