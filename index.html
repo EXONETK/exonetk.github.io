@@ -1,70 +1,129 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Button Variation Test</title>
+  <meta charset="utf-8">
+  <title>Memory Test</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    h1 { margin-bottom: 20px; }
-    #timer { font-size: 22px; margin: 20px 0; font-weight: bold; color: #000000; }
-
-    /* Button styles */
-    .button {
-      padding: 15px 30px;
-      font-size: 18px;
-      margin: 10px;
-      cursor: pointer;
-      border: none;
-      border-radius: 6px;
-    }
-    .red   { background-color: #e74c3c; color: white; }
-    .blue  { background-color: #3498db; color: white; }
-    .green { background-color: #27ae60; color: white; }
-    .large { font-size: 22px; padding: 20px 40px; }
-    .round { border-radius: 30px; }
+    body { text-align:center;
+	}
+    textarea { width:80%; max-width:400px; 
+	}
   </style>
 </head>
 <body>
-  <h1>Button Variation Test</h1>
-  <p>Observe the timer and choose a button.</p>
+  <h2>Memory Test</h2>
+  <div id="word">Press Start</div>
+  <button id="startBtn">Start</button>
 
-  <!-- Timer display -->
-  <div id="timer">0.00 seconds</div>
+  <div id="recallEasy" style="display:none;">
+    <p>Type the words that you recall</p>
+    <textarea id="inputEasy" rows="3"></textarea><br>
+    <button class="nextBtn" data-stage="easy">Next</button>
+  </div>
 
-  <!-- Buttons with variations -->
-  <button class="button red"   data-style="Red Button">Red Button</button>
-  <button class="button blue"  data-style="Blue Button">Blue Button</button>
-  <button class="button green" data-style="Green Button">Green Button</button>
-  <button class="button large blue" data-style="Large Blue Button">Large Blue</button>
-  <button class="button round red" data-style="Round Red Button">Round Red</button>
+  <div id="recallMedium" style="display:none;">
+    <p>Type the words that you recall</p>
+    <textarea id="inputMedium" rows="3"></textarea><br>
+    <button class="nextBtn" data-stage="medium">Next</button>
+  </div>
 
-  <script>
-    // Track start time
-    let startTime = new Date().getTime();
+  <div id="recallHard" style="display:none;">
+    <p>Type the words that you recall</p>
+    <textarea id="inputHard" rows="3"></textarea><br>
+    <button class="nextBtn" data-stage="hard">Finish</button>
+  </div>
 
-    // Update the visible timer every 100ms
-    let timerInterval = setInterval(function() {
-      let now = new Date().getTime();
-      let elapsed = (now - startTime) / 1000;
-      document.getElementById("timer").innerText = elapsed.toFixed(2) + " seconds";
-    }, 100);
+  <div id="submitBlock" style="display:none;">
+    <button id="prefillBtn">Go to Google Form</button>
+  </div>
 
-    // Add event listeners to all buttons
-    document.querySelectorAll(".button").forEach(button => {
-      button.onclick = function() {
-        let endTime = new Date().getTime();
-        let responseTime = (endTime - startTime) / 1000;
-        clearInterval(timerInterval);
+<script>
+const FORM_PREFILL_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSeMaBsnNYlWNqL1MY9AnhXM6pw8QAngiORGpSFofi-hTY_5zg/viewform?usp=pp_url";
 
-        // Replace entry.111111 and entry.222222 with your actual Google Form entry IDs
-        let formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSeSwhzd-vJgpjGR9pxUGy2KyX-2bTndbfaaxOa01Zg_o82jNA/viewform?usp=pp_url";
-        let responseParam = "&entry.366340186=" + responseTime.toFixed(2); // response time
-        let styleParam    = "&entry.170325149=" + encodeURIComponent(this.getAttribute("data-style")); // button style
+const ENTRY = {
+  easyText:   "entry.688271684",
+  easyScore:  "entry.2099819223",
+  medText:    "entry.1612814618",
+  medScore:   "entry.1699772145",
+  hardText:   "entry.755079465",
+  hardScore:  "entry.144112231"
+};
 
-        // Redirect with pre-filled answers
-        window.location.href = formBaseURL + responseParam + styleParam;
-      }
-    });
-  </script>
+const wordLists = {
+  easy:   ["dog","cat","book","apple","house"],
+  medium: ["candle","bridge","silver","garden","puzzle"],
+  hard:   ["labyrinth","fortitude","ephemeral","enigmatic","paradox"]
+};
+const speeds = { easy:2000, medium:1000, hard:600 };
+
+const stages = ["easy","medium","hard"];
+const wordDiv = document.getElementById("word");
+
+document.getElementById("startBtn").onclick = () => runStages();
+
+async function runStages() {
+  for (let i=0; i<stages.length; i++) {
+    await showStage(stages[i]);
+    await showRecall(stages[i]);
+  }
+  wordDiv.innerText = "Done!";
+  document.getElementById("submitBlock").style.display = "block";
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function showStage(level) {
+  const list = wordLists[level];
+  wordDiv.innerText = "Stage: " + level;
+  await sleep(1000);
+  for (let w of list) {
+    wordDiv.innerText = w;
+    await sleep(speeds[level]);
+    wordDiv.innerText = "";
+    await sleep(300);
+  }
+}
+
+function showRecall(level) {
+  return new Promise(resolve=>{
+    const block = document.getElementById("recall"+cap(level));
+    block.style.display = "block";
+    wordDiv.innerText = "Recall " + level + " words";
+    const btn = block.querySelector(".nextBtn");
+    btn.onclick = ()=>{
+      block.style.display = "none"; // hide block so user cannot edit again
+      resolve();
+    };
+  });
+}
+
+function scoreRecall(text, words){
+  const tokens = text.toLowerCase().split(/\W+/);
+  let score=0;
+  words.forEach(w=>{ if(tokens.includes(w.toLowerCase())) score++; });
+  return score;
+}
+
+document.getElementById("prefillBtn").onclick = ()=>{
+  const easyText = document.getElementById("inputEasy").value;
+  const medText  = document.getElementById("inputMedium").value;
+  const hardText = document.getElementById("inputHard").value;
+  const easyScore = scoreRecall(easyText, wordLists.easy);
+  const medScore  = scoreRecall(medText,  wordLists.medium);
+  const hardScore = scoreRecall(hardText, wordLists.hard);
+
+  let url = FORM_PREFILL_BASE;
+  url += "&"+ENTRY.easyText+"="+encodeURIComponent(easyText);
+  url += "&"+ENTRY.easyScore+"="+easyScore;
+  url += "&"+ENTRY.medText+"="+encodeURIComponent(medText);
+  url += "&"+ENTRY.medScore+"="+medScore;
+  url += "&"+ENTRY.hardText+"="+encodeURIComponent(hardText);
+  url += "&"+ENTRY.hardScore+"="+hardScore;
+
+  window.open(url,"_blank");
+}
+
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+</script>
 </body>
 </html>
