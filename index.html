@@ -4,10 +4,8 @@
   <meta charset="utf-8">
   <title>Memory Test</title>
   <style>
-    body { text-align:center;
-	}
-    textarea { width:80%; max-width:400px; 
-	}
+    body { text-align:center; font-family:sans-serif; }
+    textarea { width:80%; max-width:400px; }
   </style>
 </head>
 <body>
@@ -59,83 +57,80 @@ const wordLists = {
   hard:   ["labyrinth","fortitude","ephemeral","enigmatic","paradox"]
 };
 const speeds = { easy:2000, medium:1000, hard:600 };
-
 const stages = ["easy","medium","hard"];
 const wordDiv = document.getElementById("word");
+
+let stageStart, timerInterval;
+let stageTimes = {easy:0, medium:0, hard:0};
+
+// Utilities
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
 document.getElementById("startBtn").onclick = () => runStages();
 
 async function runStages() {
+  document.getElementById("startBtn").style.display = "none";
   for (let i=0; i<stages.length; i++) {
     await showStage(stages[i]);
-    await showRecall(stages[i]);
   }
   wordDiv.innerText = "Done!";
   document.getElementById("submitBlock").style.display = "block";
 }
 
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
 async function showStage(level) {
   const list = wordLists[level];
   wordDiv.innerText = "Stage: " + level;
   await sleep(1000);
+
+  // Show words one by one
   for (let w of list) {
     wordDiv.innerText = w;
     await sleep(speeds[level]);
     wordDiv.innerText = "";
     await sleep(300);
   }
-}
 
-function showRecall(level) {
+  // Show recall area
+  const block = document.getElementById("recall"+cap(level));
+  block.style.display = "block";
+  wordDiv.innerText = "Recall " + level + " words";
+
+  // Start timer
+  stageStart = Date.now();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    let elapsed = (Date.now() - stageStart)/1000;
+    document.getElementById("timer").innerText = "Time elapsed: " + elapsed.toFixed(2) + "s";
+  },100);
+
+  // Wait until Next clicked
   return new Promise(resolve=>{
-    const block = document.getElementById("recall"+cap(level));
-    block.style.display = "block";
-    wordDiv.innerText = "Recall " + level + " words";
     const btn = block.querySelector(".nextBtn");
     btn.onclick = ()=>{
+      clearInterval(timerInterval);
+      stageTimes[level] = ((Date.now() - stageStart)/1000).toFixed(2);
       block.style.display = "none"; 
       resolve();
     };
   });
 }
-let stageStart, timerInterval;
-let stageTimes = {easy:0, medium:0, hard:0};
 
-async function showStage(level) {
- 
-  stageStart = Date.now();
-  clearInterval(timerInterval);
-  timerInterval = setInterval(()=>{
-    let elapsed = (Date.now() - stageStart)/1000;
-    document.getElementById("timer").innerText = "Timer: " + elapsed.toFixed(2) + "s";
-  },100);
-
-  const list = wordLists[level];
-  wordDiv.innerText = "Stage: " + level;
-  await sleep(1000);
-  for (let w of list) {
-    wordDiv.innerText = w;
-    await sleep(speeds[level]);
-    wordDiv.innerText = "";
-    await sleep(300);
+function scoreRecall(answer, correctList){
+  const words = answer.split(/\s+/).map(w=>w.toLowerCase());
+  let score = 0;
+  for (let w of correctList){
+    if (words.includes(w.toLowerCase())) score++;
   }
-
-  clearInterval(timerInterval);
-  stageTimes[level] = ((Date.now() - stageStart)/1000).toFixed(2);
-}
-function scoreRecall(text, words){
-  const tokens = text.toLowerCase().split(/\W+/);
-  let score=0;
-  words.forEach(w=>{ if(tokens.includes(w.toLowerCase())) score++; });
   return score;
 }
 
+// Prefill to Google Form
 document.getElementById("prefillBtn").onclick = ()=>{
   const easyText = document.getElementById("inputEasy").value;
   const medText  = document.getElementById("inputMedium").value;
   const hardText = document.getElementById("inputHard").value;
+
   const easyScore = scoreRecall(easyText, wordLists.easy);
   const medScore  = scoreRecall(medText,  wordLists.medium);
   const hardScore = scoreRecall(hardText, wordLists.hard);
@@ -153,11 +148,6 @@ document.getElementById("prefillBtn").onclick = ()=>{
 
   window.open(url,"_blank");
 }
-
-function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 </script>
 </body>
 </html>
-
-
-
