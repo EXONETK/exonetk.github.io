@@ -13,6 +13,7 @@
 <body>
   <h2>Memory Test</h2>
   <div id="word">Press Start</div>
+  <div id="timer" style="font-size:18px; margin:10px;">Time elapsed: 0.00s</div>
   <button id="startBtn">Start</button>
 
   <div id="recallEasy" style="display:none;">
@@ -46,7 +47,10 @@ const ENTRY = {
   medText:    "entry.1612814618",
   medScore:   "entry.1699772145",
   hardText:   "entry.755079465",
-  hardScore:  "entry.144112231"
+  hardScore:  "entry.144112231",
+  easyTime:   "entry.111111111", // <-- new
+  medTime:    "entry.222222222", // <-- new
+  hardTime:   "entry.333333333"  // <-- new
 };
 
 const wordLists = {
@@ -91,12 +95,36 @@ function showRecall(level) {
     wordDiv.innerText = "Recall " + level + " words";
     const btn = block.querySelector(".nextBtn");
     btn.onclick = ()=>{
-      block.style.display = "none"; // hide block so user cannot edit again
+      block.style.display = "none"; 
       resolve();
     };
   });
 }
+let stageStart, timerInterval;
+let stageTimes = {easy:0, medium:0, hard:0};
 
+async function showStage(level) {
+ 
+  stageStart = Date.now();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    let elapsed = (Date.now() - stageStart)/1000;
+    document.getElementById("timer").innerText = "Timer: " + elapsed.toFixed(2) + "s";
+  },100);
+
+  const list = wordLists[level];
+  wordDiv.innerText = "Stage: " + level;
+  await sleep(1000);
+  for (let w of list) {
+    wordDiv.innerText = w;
+    await sleep(speeds[level]);
+    wordDiv.innerText = "";
+    await sleep(300);
+  }
+
+  clearInterval(timerInterval);
+  stageTimes[level] = ((Date.now() - stageStart)/1000).toFixed(2);
+}
 function scoreRecall(text, words){
   const tokens = text.toLowerCase().split(/\W+/);
   let score=0;
@@ -115,10 +143,13 @@ document.getElementById("prefillBtn").onclick = ()=>{
   let url = FORM_PREFILL_BASE;
   url += "&"+ENTRY.easyText+"="+encodeURIComponent(easyText);
   url += "&"+ENTRY.easyScore+"="+easyScore;
+  url += "&"+ENTRY.easyTime+"="+stageTimes.easy;   
   url += "&"+ENTRY.medText+"="+encodeURIComponent(medText);
   url += "&"+ENTRY.medScore+"="+medScore;
+  url += "&"+ENTRY.medTime+"="+stageTimes.medium; 
   url += "&"+ENTRY.hardText+"="+encodeURIComponent(hardText);
   url += "&"+ENTRY.hardScore+"="+hardScore;
+  url += "&"+ENTRY.hardTime+"="+stageTimes.hard;  
 
   window.open(url,"_blank");
 }
@@ -127,3 +158,4 @@ function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 </script>
 </body>
 </html>
+
